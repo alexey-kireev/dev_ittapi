@@ -123,6 +123,7 @@ class NativeBuildExtension(build_ext):  # pylint: disable=R0903
                               os.path.join(src_dir, filename)) for filename in asm_files]
             # Compile
             for obj_file, asm_file in obj_asm_pairs:
+                # nosec B603: as_full_path and asm_file are locally validated paths, shell=False
                 run([as_full_path, '/Fo', obj_file, '/c', asm_file], check=True, shell=False)
 
             [ext.extra_objects.append(obj_file) for obj_file, _ in obj_asm_pairs]
