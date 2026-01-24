@@ -1,6 +1,6 @@
 from os import environ, path
 from sys import platform
-from subprocess import run # nosec B603
+from subprocess import run # nosec B404
 
 
 class VTuneTool:

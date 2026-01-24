@@ -6,7 +6,7 @@ import sys
 
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from subprocess import run  # pylint: disable=C0411 # nosec B603
+from subprocess import run  # pylint: disable=C0411 # nosec B404
 from shutil import which
 
 
