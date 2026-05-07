@@ -65,9 +65,16 @@ jobs:
         mkdir -p "$RUNNER_TEMP/refcol_logs"
         lib_path=$(cygpath -w "$(pwd)/${{ matrix.lib }}" 2>/dev/null || echo "$(pwd)/${{ matrix.lib }}")
         log_dir=$(cygpath -w "$RUNNER_TEMP/refcol_logs" 2>/dev/null || echo "$RUNNER_TEMP/refcol_logs")
+        echo "lib_path=$lib_path"
+        echo "log_dir=$log_dir"
+        ls "$(pwd)/${{ matrix.lib }}" && echo "DLL/SO exists" || echo "ERROR: DLL/SO not found"
         export INTEL_LIBITTNOTIFY64="$lib_path"
         export INTEL_LIBITTNOTIFY_LOG_DIR="$log_dir"
+        echo "Running: ./${{ matrix.exe }}"
         ./${{ matrix.exe }}
+        echo "Exit code: $?"
+        echo "Contents of log dir:"
+        ls -la "$RUNNER_TEMP/refcol_logs/" || echo "(empty or missing)"
     - name: Verify log output
       run: |
         log=$(ls "$RUNNER_TEMP/refcol_logs"/libittnotify_refcol_*.log 2>/dev/null | head -1)
