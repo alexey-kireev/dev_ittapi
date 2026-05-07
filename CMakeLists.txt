@@ -27,6 +27,7 @@ option(FORCE_32 "Force a 32-bit compile on 64-bit" OFF)
 option(ITT_API_IPT_SUPPORT "ptmarks support" OFF)
 option(ITT_API_FORTRAN_SUPPORT "fortran support" OFF)
 option(ITT_API_CPP_SUPPORT "C++ wrapper support" OFF)
+option(ITT_API_REFERENCE_COLLECTOR "Build reference collector shared library" OFF)
 option(ITT_API_INSTALL "Enable ITT API installation rules" ON)
 
 if(FORCE_32 AND UNIX)
@@ -140,6 +141,29 @@ add_library(ittapi::ittnotify ALIAS ittnotify)
 
 set(JITPROFILING_SRC "src/ittnotify/jitprofiling.c")
 add_library(jitprofiling STATIC ${JITPROFILING_SRC})
+
+if(ITT_API_REFERENCE_COLLECTOR)
+    add_library(ittnotify_refcol SHARED src/ittnotify_refcol/itt_refcol_impl.c)
+
+    target_include_directories(ittnotify_refcol
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        PRIVATE src/ittnotify
+    )
+
+    target_link_libraries(ittnotify_refcol PRIVATE ${CMAKE_DL_LIBS})
+    set_target_properties(ittnotify_refcol PROPERTIES
+        LINKER_LANGUAGE C
+        RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
+        ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+
+    if(WIN32)
+        set_target_properties(ittnotify_refcol PROPERTIES
+            OUTPUT_NAME libittnotify_refcol
+            WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    else()
+        set_target_properties(ittnotify_refcol PROPERTIES OUTPUT_NAME ittnotify_refcol)
+    endif()
+endif()
 
 if(WIN32)
     set_target_properties(ittnotify PROPERTIES OUTPUT_NAME libittnotify)

@@ -4,8 +4,10 @@
   SPDX-License-Identifier: GPL-2.0-only OR BSD-3-Clause
 */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -45,15 +47,37 @@ static struct ref_collector_global {
     __itt_histogram*       histogram_list;
 } g_ref_collector_global = {MUTEX_INITIALIZER, 0, NULL, NULL, NULL, NULL};
 
+#ifdef _WIN32
+    #define REFCOL_LOCALTIME(out_tm, in_time) (localtime_s((out_tm), (in_time)) == 0)
+#else
+    #define REFCOL_LOCALTIME(out_tm, in_time) (localtime_r((in_time), (out_tm)) != NULL)
+#endif
+
 static char* log_file_name_generate()
 {
     time_t time_now = time(NULL);
-    struct tm* time_info = localtime(&time_now);
+    struct tm* time_info = malloc(sizeof(struct tm));
     char* log_file_name = malloc(sizeof(char) * (LOG_BUFFER_MAX_SIZE/2));
+
+    if (log_file_name == NULL)
+    {
+        printf("ERROR: Failed to allocate memory for log file name\n");
+        free(time_info);
+        return NULL;
+    }
+
+    if (!REFCOL_LOCALTIME(time_info, &time_now))
+    {
+        printf("ERROR: Failed to get local time for log file name\n");
+        free(time_info);
+        free(log_file_name);
+        return NULL;
+    }
 
     sprintf(log_file_name,"libittnotify_refcol_%d%d%d%d%d%d.log",
             time_info->tm_year+1900, time_info->tm_mon+1, time_info->tm_mday,
             time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
+    free(time_info);
 
     return log_file_name;
 }
@@ -84,6 +108,10 @@ static void ref_collector_init()
                 if (temp_dir != NULL)
                 {
                     sprintf(file_name_buffer,"%s\\%s", temp_dir, log_file);
+                }
+                else
+                {
+                    sprintf(file_name_buffer,"%s", log_file);
                 }
             #else
                 sprintf(file_name_buffer,"/tmp/%s", log_file);
@@ -364,7 +392,45 @@ static char* get_context_metadata_element(__itt_context_type type, void* metadat
     return metadata_str;
 }
 
+#ifdef _WIN32
+static char* wchar2char(const wchar_t* wide_str)
+{
+    if (wide_str == NULL)
+    {
+        return NULL;
+    }
+
+    int narrow_size = WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, NULL, 0, NULL, NULL);
+    if (narrow_size <= 0)
+    {
+        return NULL;
+    }
+
+    char* narrow_str = (char*)malloc((size_t)narrow_size);
+    if (narrow_str == NULL)
+    {
+        return NULL;
+    }
+
+    if (!WideCharToMultiByte(CP_UTF8, 0, wide_str, -1, narrow_str, narrow_size, NULL, NULL))
+    {
+        free(narrow_str);
+        return NULL;
+    }
+
+    return narrow_str;
+}
+#endif
+
+#ifdef _WIN32
+ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_createW(const wchar_t *name)
+{
+    return __itt_domain_createA(wchar2char(name));
+}
+ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_createA(const char *name)
+#else
 ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_create(const char *name)
+#endif
 {
     if (!g_ref_collector_global.mutex_initialized || name == NULL)
     {
@@ -396,7 +462,15 @@ ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_create(const char *name)
     return h;
 }
 
+#ifdef _WIN32
+ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_createW(const wchar_t* name)
+{
+    return __itt_string_handle_createA(wchar2char(name));
+}
+ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_createA(const char* name)
+#else
 ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_create(const char* name)
+#endif
 {
     if (!g_ref_collector_global.mutex_initialized || name == NULL)
     {
@@ -428,21 +502,49 @@ ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_create(const char* 
     return h;
 }
 
+#ifdef _WIN32
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createW(const wchar_t *name, const wchar_t *domain)
+{
+    return __itt_counter_createA(wchar2char(name), wchar2char(domain));
+}
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createA(const char *name, const char *domain)
+#else
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create(const char *name, const char *domain)
+#endif
 {
     LOG_FUNC_CALL_INFO("function call");
     return __itt_counter_create_typed(name, domain, __itt_metadata_u64);
 }
 
+#ifdef _WIN32
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createW_v3(
+    const __itt_domain* domain, const wchar_t* name, __itt_metadata_type type)
+{
+    return __itt_counter_create_typed(wchar2char(name), domain->nameA, type);
+}
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createA_v3(
+    const __itt_domain* domain, const char* name, __itt_metadata_type type)
+#else
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_v3(
     const __itt_domain* domain, const char* name, __itt_metadata_type type)
+#endif
 {
     LOG_FUNC_CALL_INFO("function call");
     return __itt_counter_create_typed(name, domain->nameA, type);
 }
 
+#ifdef _WIN32
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typedW(
+    const wchar_t *name, const wchar_t *domain, __itt_metadata_type type)
+{
+    return __itt_counter_create_typedA(wchar2char(name), wchar2char(domain), type);
+}
+ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typedA(
+    const char *name, const char *domain, __itt_metadata_type type)
+#else
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typed(
     const char *name, const char *domain, __itt_metadata_type type)
+#endif
 {
     if (!g_ref_collector_global.mutex_initialized || name == NULL || domain == NULL)
     {
@@ -478,8 +580,18 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typed(
     return (__itt_counter)h;
 }
 
+#ifdef _WIN32
+ITT_EXTERN_C __itt_histogram* ITTAPI __itt_histogram_createW(
+    const __itt_domain* domain, const wchar_t* name, __itt_metadata_type x_type, __itt_metadata_type y_type)
+{
+    return __itt_histogram_createA(domain, wchar2char(name), x_type, y_type);
+}
+ITT_EXTERN_C __itt_histogram* ITTAPI __itt_histogram_createA(
+    const __itt_domain* domain, const char* name, __itt_metadata_type x_type, __itt_metadata_type y_type)
+#else
 ITT_EXTERN_C __itt_histogram* ITTAPI __itt_histogram_create(
     const __itt_domain* domain, const char* name, __itt_metadata_type x_type, __itt_metadata_type y_type)
+#endif
 {
     if (!g_ref_collector_global.mutex_initialized || name == NULL || domain == NULL)
     {
