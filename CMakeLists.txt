@@ -163,6 +163,18 @@ if(ITT_API_REFERENCE_COLLECTOR)
     else()
         set_target_properties(ittnotify_refcol PROPERTIES OUTPUT_NAME ittnotify_refcol)
     endif()
+
+    option(ITT_API_REFCOL_SMOKE_TESTS "Build reference collector smoke tests" OFF)
+    if(ITT_API_REFCOL_SMOKE_TESTS)
+        add_executable(refcol_smoke_test src/ittnotify_refcol/tests/smoke_test.c)
+        target_include_directories(refcol_smoke_test
+            PRIVATE include
+                    src/ittnotify
+        )
+        target_link_libraries(refcol_smoke_test PRIVATE ittnotify ${CMAKE_DL_LIBS})
+        set_target_properties(refcol_smoke_test PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+    endif()
 endif()
 
 if(WIN32)

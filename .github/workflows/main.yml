@@ -48,36 +48,18 @@ jobs:
         include:
           - os: ubuntu-latest
             lib: build_linux/64/bin/libittnotify_refcol.so
-            exe: smoke_test
+            exe: build_linux/64/bin/refcol_smoke_test
           - os: windows-latest
             lib: build_win/64/bin/libittnotify_refcol.dll
-            exe: smoke_test.exe
+            exe: build_win/64/bin/refcol_smoke_test.exe
     defaults:
       run:
         shell: bash
     steps:
     - name: Checkout sources
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Setup MSVC environment
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@0b201ec74f55ad10e66500d07fc9ecfd7bfde614 # v1.13.0
-    - name: Build reference collector library
-      run: python buildall.py --force_bits 64 --refcol ${{ runner.os == 'Windows' && '--cmake_gen ninja' || '' }}
-    - name: Build smoke test app (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        gcc src/ittnotify_refcol/tests/smoke_test.c src/ittnotify/ittnotify_static.c \
-            -o smoke_test \
-            -I include \
-            -I src/ittnotify \
-            -ldl
-    - name: Build smoke test app (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cl.exe /nologo \
-            src/ittnotify_refcol/tests/smoke_test.c src/ittnotify/ittnotify_static.c \
-            /I include /I src/ittnotify \
-            /Fe smoke_test.exe
+    - name: Build reference collector library and smoke test
+      run: python buildall.py --force_bits 64 --smoke ${{ runner.os == 'Windows' && '--cmake_gen ninja' || '' }}
     - name: Run smoke test
       run: |
         mkdir -p "$RUNNER_TEMP/refcol_logs"
