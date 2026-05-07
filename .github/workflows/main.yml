@@ -65,8 +65,8 @@ jobs:
         mkdir -p "$RUNNER_TEMP/refcol_logs"
         lib_path=$(cygpath -w "$(pwd)/${{ matrix.lib }}" 2>/dev/null || echo "$(pwd)/${{ matrix.lib }}")
         log_dir=$(cygpath -w "$RUNNER_TEMP/refcol_logs" 2>/dev/null || echo "$RUNNER_TEMP/refcol_logs")
-        INTEL_LIBITTNOTIFY64="$lib_path" \
-        INTEL_LIBITTNOTIFY_LOG_DIR="$log_dir" \
+        export INTEL_LIBITTNOTIFY64="$lib_path"
+        export INTEL_LIBITTNOTIFY_LOG_DIR="$log_dir"
         ./${{ matrix.exe }}
     - name: Verify log output
       run: |
