@@ -60,23 +60,14 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Build reference collector library and smoke test
       run: python buildall.py --force_bits 64 --smoke ${{ runner.os == 'Windows' && '--cmake_gen ninja' || '' }}
-    - name: Find built artifacts
-      run: find build_win build_linux -name "libittnotify_refcol*" -o -name "refcol_smoke_test*" 2>/dev/null || true
     - name: Run smoke test
       run: |
         mkdir -p "$RUNNER_TEMP/refcol_logs"
         lib_path=$(cygpath -w "$(pwd)/${{ matrix.lib }}" 2>/dev/null || echo "$(pwd)/${{ matrix.lib }}")
         log_dir=$(cygpath -w "$RUNNER_TEMP/refcol_logs" 2>/dev/null || echo "$RUNNER_TEMP/refcol_logs")
-        echo "lib_path=$lib_path"
-        echo "log_dir=$log_dir"
-        ls "$(pwd)/${{ matrix.lib }}" && echo "DLL/SO exists" || echo "ERROR: DLL/SO not found"
         export INTEL_LIBITTNOTIFY64="$lib_path"
         export INTEL_LIBITTNOTIFY_LOG_DIR="$log_dir"
-        echo "Running: ./${{ matrix.exe }}"
         ./${{ matrix.exe }}
-        echo "Exit code: $?"
-        echo "Contents of log dir:"
-        ls -la "$RUNNER_TEMP/refcol_logs/" || echo "(empty or missing)"
     - name: Verify log output
       run: |
         log=$(ls "$RUNNER_TEMP/refcol_logs"/libittnotify_refcol_*.log 2>/dev/null | head -1)
@@ -107,21 +98,6 @@ jobs:
     - name: Test (Windows)
       run: ctest --test-dir build_win/64/cpp --build-config Release --output-on-failure
       if: runner.os == 'Windows'
-
-  reference_collector:
-    name: Check reference collector
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-          - os: windows-latest
-    steps:
-    - name: Checkout sources
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Build ITT Reference Collector
-      run: python buildall.py --force_bits 64 --refcol
 
   rust_format:
     name: Check Rust formatting
