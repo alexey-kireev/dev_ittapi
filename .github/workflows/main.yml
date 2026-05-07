@@ -60,6 +60,8 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Build reference collector library and smoke test
       run: python buildall.py --force_bits 64 --smoke ${{ runner.os == 'Windows' && '--cmake_gen ninja' || '' }}
+    - name: Find built artifacts
+      run: find build_win build_linux -name "libittnotify_refcol*" -o -name "refcol_smoke_test*" 2>/dev/null || true
     - name: Run smoke test
       run: |
         mkdir -p "$RUNNER_TEMP/refcol_logs"
