@@ -159,6 +159,7 @@ if(ITT_API_REFERENCE_COLLECTOR)
     if(WIN32)
         set_target_properties(ittnotify_refcol PROPERTIES
             OUTPUT_NAME libittnotify_refcol
+            PREFIX ""
             WINDOWS_EXPORT_ALL_SYMBOLS ON)
     else()
         set_target_properties(ittnotify_refcol PROPERTIES OUTPUT_NAME ittnotify_refcol)
