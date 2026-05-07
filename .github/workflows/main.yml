@@ -57,7 +57,7 @@ jobs:
     - name: Run smoke test
       run: |
         mkdir -p /tmp/refcol_logs
-        INTEL_LIBITTNOTIFY64=$(pwd)/build_linux/64/libittnotify_refcol.so \
+        INTEL_LIBITTNOTIFY64=$(pwd)/build_linux/64/bin/libittnotify_refcol.so \
         INTEL_LIBITTNOTIFY_LOG_DIR=/tmp/refcol_logs \
         ./smoke_test
     - name: Verify log output
