@@ -50,7 +50,7 @@ jobs:
             lib: build_linux/64/bin/libittnotify_refcol.so
             exe: build_linux/64/bin/refcol_smoke_test
           - os: windows-latest
-            lib: build_win/64/bin/libittnotify_refcol.dll
+            lib: build_win/64/bin/liblibittnotify_refcol.dll
             exe: build_win/64/bin/refcol_smoke_test.exe
     defaults:
       run:
