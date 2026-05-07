@@ -60,6 +60,21 @@ jobs:
       run: ctest --test-dir build_win/64/cpp --build-config Release --output-on-failure
       if: runner.os == 'Windows'
 
+  reference_collector:
+    name: Check reference collector
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: windows-latest
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Build C++ wrapper
+      run: python buildall.py --force_bits 64 --refcol
+
   rust_format:
     name: Check Rust formatting
     runs-on: ubuntu-latest
