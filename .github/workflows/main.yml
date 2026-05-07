@@ -39,6 +39,37 @@ jobs:
       #    doesn't work in case of CMake + VS (https://github.com/fortran-lang/setup-fortran/issues/45)
       run: python buildall.py --force_bits 64 -ft ${{ matrix.optional_args }}
 
+  refcol_smoke:
+    name: Reference collector smoke test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Build reference collector library
+      run: python buildall.py --force_bits 64 --refcol
+    - name: Build smoke test app
+      run: |
+        gcc src/ittnotify_refcol/tests/smoke_test.c src/ittnotify/ittnotify_static.c \
+            -o smoke_test \
+            -I include \
+            -I src/ittnotify \
+            -ldl
+    - name: Run smoke test
+      run: |
+        mkdir -p /tmp/refcol_logs
+        INTEL_LIBITTNOTIFY64=$(pwd)/build_linux/64/libittnotify_refcol.so \
+        INTEL_LIBITTNOTIFY_LOG_DIR=/tmp/refcol_logs \
+        ./smoke_test
+    - name: Verify log output
+      run: |
+        log=$(ls /tmp/refcol_logs/libittnotify_refcol_*.log 2>/dev/null | head -1)
+        if [ -z "$log" ]; then echo "ERROR: no log file found"; exit 1; fi
+        echo "Log file: $log"
+        grep -q "__itt_task_begin"    "$log" || { echo "ERROR: __itt_task_begin not found";    exit 1; }
+        grep -q "__itt_task_end"      "$log" || { echo "ERROR: __itt_task_end not found";      exit 1; }
+        grep -q "__itt_metadata_add"  "$log" || { echo "ERROR: __itt_metadata_add not found";  exit 1; }
+        echo "Smoke test passed."
+
   cpp_wrapper:
     name: Check C++ wrapper
     runs-on: ${{ matrix.os }}
@@ -72,7 +103,7 @@ jobs:
     steps:
     - name: Checkout sources
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-    - name: Build C++ wrapper
+    - name: Build ITT Reference Collector
       run: python buildall.py --force_bits 64 --refcol
 
   rust_format:
