@@ -41,33 +41,57 @@ jobs:
 
   refcol_smoke:
     name: Reference collector smoke test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            lib: build_linux/64/bin/libittnotify_refcol.so
+            exe: smoke_test
+          - os: windows-latest
+            lib: build_win/64/bin/libittnotify_refcol.dll
+            exe: smoke_test.exe
+    defaults:
+      run:
+        shell: bash
     steps:
     - name: Checkout sources
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Setup MSVC environment
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@0b201ec74f55ad10e66500d07fc9ecfd7bfde614 # v1.13.0
     - name: Build reference collector library
-      run: python buildall.py --force_bits 64 --refcol
-    - name: Build smoke test app
+      run: python buildall.py --force_bits 64 --refcol ${{ runner.os == 'Windows' && '--cmake_gen ninja' || '' }}
+    - name: Build smoke test app (Linux)
+      if: runner.os == 'Linux'
       run: |
         gcc src/ittnotify_refcol/tests/smoke_test.c src/ittnotify/ittnotify_static.c \
             -o smoke_test \
             -I include \
             -I src/ittnotify \
             -ldl
+    - name: Build smoke test app (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cl.exe /nologo \
+            src/ittnotify_refcol/tests/smoke_test.c src/ittnotify/ittnotify_static.c \
+            /I include /I src/ittnotify \
+            /Fe smoke_test.exe
     - name: Run smoke test
       run: |
-        mkdir -p /tmp/refcol_logs
-        INTEL_LIBITTNOTIFY64=$(pwd)/build_linux/64/bin/libittnotify_refcol.so \
-        INTEL_LIBITTNOTIFY_LOG_DIR=/tmp/refcol_logs \
-        ./smoke_test
+        mkdir -p "$RUNNER_TEMP/refcol_logs"
+        INTEL_LIBITTNOTIFY64=$(cygpath -w "$(pwd)/${{ matrix.lib }}" 2>/dev/null || echo "$(pwd)/${{ matrix.lib }}") \
+        INTEL_LIBITTNOTIFY_LOG_DIR="$RUNNER_TEMP/refcol_logs" \
+        ./${{ matrix.exe }}
     - name: Verify log output
       run: |
-        log=$(ls /tmp/refcol_logs/libittnotify_refcol_*.log 2>/dev/null | head -1)
+        log=$(ls "$RUNNER_TEMP/refcol_logs"/libittnotify_refcol_*.log 2>/dev/null | head -1)
         if [ -z "$log" ]; then echo "ERROR: no log file found"; exit 1; fi
         echo "Log file: $log"
-        grep -q "__itt_task_begin"    "$log" || { echo "ERROR: __itt_task_begin not found";    exit 1; }
-        grep -q "__itt_task_end"      "$log" || { echo "ERROR: __itt_task_end not found";      exit 1; }
-        grep -q "__itt_metadata_add"  "$log" || { echo "ERROR: __itt_metadata_add not found";  exit 1; }
+        grep -q "__itt_task_begin"   "$log" || { echo "ERROR: __itt_task_begin not found";   exit 1; }
+        grep -q "__itt_task_end"     "$log" || { echo "ERROR: __itt_task_end not found";     exit 1; }
+        grep -q "__itt_metadata_add" "$log" || { echo "ERROR: __itt_metadata_add not found"; exit 1; }
         echo "Smoke test passed."
 
   cpp_wrapper:
