@@ -1,14 +1,13 @@
 /*
-  Copyright (C) 2025 Intel Corporation
+  Copyright (C) 2026 Intel Corporation
 
   SPDX-License-Identifier: GPL-2.0-only OR BSD-3-Clause
 */
 
-#include <stdio.h>
 #include "ittnotify.h"
 #include "ittnotify_types.h"
 
-int main()
+int main(void)
 {
     __itt_domain* domain = __itt_domain_create("smoke_test_domain");
     __itt_string_handle* handle = __itt_string_handle_create("smoke_test_handler");

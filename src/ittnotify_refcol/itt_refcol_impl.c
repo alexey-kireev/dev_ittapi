@@ -56,28 +56,25 @@ static struct ref_collector_global {
 static char* log_file_name_generate()
 {
     time_t time_now = time(NULL);
-    struct tm* time_info = malloc(sizeof(struct tm));
+    struct tm time_info;
     char* log_file_name = malloc(sizeof(char) * (LOG_BUFFER_MAX_SIZE/2));
 
     if (log_file_name == NULL)
     {
         printf("ERROR: Failed to allocate memory for log file name\n");
-        free(time_info);
         return NULL;
     }
 
-    if (!REFCOL_LOCALTIME(time_info, &time_now))
+    if (!REFCOL_LOCALTIME(&time_info, &time_now))
     {
         printf("ERROR: Failed to get local time for log file name\n");
-        free(time_info);
         free(log_file_name);
         return NULL;
     }
 
     sprintf(log_file_name,"libittnotify_refcol_%d%d%d%d%d%d.log",
-            time_info->tm_year+1900, time_info->tm_mon+1, time_info->tm_mday,
-            time_info->tm_hour, time_info->tm_min, time_info->tm_sec);
-    free(time_info);
+            time_info.tm_year+1900, time_info.tm_mon+1, time_info.tm_mday,
+            time_info.tm_hour, time_info.tm_min, time_info.tm_sec);
 
     return log_file_name;
 }
@@ -425,7 +422,10 @@ static char* wchar2char(const wchar_t* wide_str)
 #ifdef _WIN32
 ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_createW(const wchar_t *name)
 {
-    return __itt_domain_createA(wchar2char(name));
+    char* name_a = wchar2char(name);
+    __itt_domain* result = __itt_domain_createA(name_a);
+    free(name_a);
+    return result;
 }
 ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_createA(const char *name)
 #else
@@ -465,7 +465,10 @@ ITT_EXTERN_C __itt_domain* ITTAPI __itt_domain_create(const char *name)
 #ifdef _WIN32
 ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_createW(const wchar_t* name)
 {
-    return __itt_string_handle_createA(wchar2char(name));
+    char* name_a = wchar2char(name);
+    __itt_string_handle* result = __itt_string_handle_createA(name_a);
+    free(name_a);
+    return result;
 }
 ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_createA(const char* name)
 #else
@@ -505,7 +508,12 @@ ITT_EXTERN_C __itt_string_handle* ITTAPI __itt_string_handle_create(const char* 
 #ifdef _WIN32
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createW(const wchar_t *name, const wchar_t *domain)
 {
-    return __itt_counter_createA(wchar2char(name), wchar2char(domain));
+    char* name_a = wchar2char(name);
+    char* domain_a = wchar2char(domain);
+    __itt_counter result = __itt_counter_createA(name_a, domain_a);
+    free(name_a);
+    free(domain_a);
+    return result;
 }
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createA(const char *name, const char *domain)
 #else
@@ -520,7 +528,10 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create(const char *name, const c
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createW_v3(
     const __itt_domain* domain, const wchar_t* name, __itt_metadata_type type)
 {
-    return __itt_counter_create_typed(wchar2char(name), domain->nameA, type);
+    char* name_a = wchar2char(name);
+    __itt_counter result = __itt_counter_create_typed(name_a, domain->nameA, type);
+    free(name_a);
+    return result;
 }
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createA_v3(
     const __itt_domain* domain, const char* name, __itt_metadata_type type)
@@ -537,7 +548,12 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_v3(
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typedW(
     const wchar_t *name, const wchar_t *domain, __itt_metadata_type type)
 {
-    return __itt_counter_create_typedA(wchar2char(name), wchar2char(domain), type);
+    char* name_a = wchar2char(name);
+    char* domain_a = wchar2char(domain);
+    __itt_counter result = __itt_counter_create_typedA(name_a, domain_a, type);
+    free(name_a);
+    free(domain_a);
+    return result;
 }
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typedA(
     const char *name, const char *domain, __itt_metadata_type type)
@@ -584,7 +600,10 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_typed(
 ITT_EXTERN_C __itt_histogram* ITTAPI __itt_histogram_createW(
     const __itt_domain* domain, const wchar_t* name, __itt_metadata_type x_type, __itt_metadata_type y_type)
 {
-    return __itt_histogram_createA(domain, wchar2char(name), x_type, y_type);
+    char* name_a = wchar2char(name);
+    __itt_histogram* result = __itt_histogram_createA(domain, name_a, x_type, y_type);
+    free(name_a);
+    return result;
 }
 ITT_EXTERN_C __itt_histogram* ITTAPI __itt_histogram_createA(
     const __itt_domain* domain, const char* name, __itt_metadata_type x_type, __itt_metadata_type y_type)

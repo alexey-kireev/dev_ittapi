@@ -122,7 +122,8 @@ def main():
     parser.add_argument(
         "--refcol", help="enable reference collector build", action="store_true")
     parser.add_argument(
-        "--smoke", help="enable reference collector smoke tests", action="store_true")
+        "-D", dest="cmake_defines", metavar="VAR=VALUE", action="append", default=[],
+        help="pass extra -D defines to cmake (may be specified multiple times)")
     parser.add_argument(
         "--force_bits", choices=["32", "64"], help="specify bit version for the target")
     if sys.platform == 'win32' and vs_versions:
@@ -185,9 +186,8 @@ def main():
             ("-DITT_API_IPT_SUPPORT=1" if args.ptmark else ""),
             ("-DITT_API_FORTRAN_SUPPORT=1" if args.fortran else ""),
             ("-DITT_API_CPP_SUPPORT=ON" if args.cpp else ""),
-            ("-DITT_API_REFERENCE_COLLECTOR=ON" if (args.refcol or args.smoke) else ""),
-            ("-DITT_API_REFCOL_SMOKE_TESTS=ON" if args.smoke else "")
-        ])))
+            ("-DITT_API_REFERENCE_COLLECTOR=ON" if args.refcol else ""),
+        ] + ["-D" + d for d in args.cmake_defines])))
 
         if sys.platform == 'win32':
             target_project = 'ALL_BUILD' if not use_ninja else 'all'
