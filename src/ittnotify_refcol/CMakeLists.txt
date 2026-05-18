@@ -12,6 +12,7 @@ set_target_properties(ittnotify_refcol PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH})
 
 if(WIN32)
+    target_compile_definitions(ittnotify_refcol PRIVATE _CRT_SECURE_NO_WARNINGS)
     set_target_properties(ittnotify_refcol PROPERTIES
         OUTPUT_NAME libittnotify_refcol
         PREFIX ""
