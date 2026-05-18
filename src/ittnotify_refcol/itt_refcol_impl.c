@@ -287,6 +287,8 @@ static void log_func_call(uint8_t log_level, const char* function_name, const ch
     va_list message_args;
 
     result_len += snprintf(log_buffer, LOG_BUFFER_MAX_SIZE, "[%s] %s(...) - ", log_level_str[log_level], function_name);
+    if (result_len >= LOG_BUFFER_MAX_SIZE)
+        result_len = LOG_BUFFER_MAX_SIZE - 1;
     va_start(message_args, message_format);
     vsnprintf(log_buffer + result_len, LOG_BUFFER_MAX_SIZE - result_len, message_format, message_args);
     va_end(message_args);
@@ -317,35 +319,35 @@ static char* get_metadata_elements(size_t size, __itt_metadata_type type, void* 
     switch (type)
     {
     case __itt_metadata_u64:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%" PRIu64 ";", ((uint64_t*)metadata)[i]);
         break;
     case __itt_metadata_s64:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%" PRId64 ";", ((int64_t*)metadata)[i]);
         break;
     case __itt_metadata_u32:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%u;", ((uint32_t*)metadata)[i]);
         break;
     case __itt_metadata_s32:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%d;", ((int32_t*)metadata)[i]);
         break;
     case __itt_metadata_u16:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%u;", ((uint16_t*)metadata)[i]);
         break;
     case __itt_metadata_s16:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%d;", ((int16_t*)metadata)[i]);
         break;
     case __itt_metadata_float:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%f;", ((float*)metadata)[i]);
         break;
     case __itt_metadata_double:
-        for (uint16_t i = 0; i < size; i++)
+        for (uint16_t i = 0; i < size && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
             offset += snprintf(metadata_str + offset, LOG_BUFFER_MAX_SIZE - offset, "%lf;", ((double*)metadata)[i]);
         break;
     default:
@@ -528,7 +530,9 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create(const char *name, const c
 ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_createW_v3(
     const __itt_domain* domain, const wchar_t* name, __itt_metadata_type type)
 {
+    if (domain == NULL) return NULL;
     char* name_a = wchar2char(name);
+    if (name_a == NULL) return NULL;
     __itt_counter result = __itt_counter_create_typed(name_a, domain->nameA, type);
     free(name_a);
     return result;
@@ -540,6 +544,11 @@ ITT_EXTERN_C __itt_counter ITTAPI __itt_counter_create_v3(
     const __itt_domain* domain, const char* name, __itt_metadata_type type)
 #endif
 {
+    if (domain == NULL)
+    {
+        LOG_FUNC_CALL_WARN("domain is NULL");
+        return NULL;
+    }
     LOG_FUNC_CALL_INFO("function call");
     return __itt_counter_create_typed(name, domain->nameA, type);
 }
@@ -848,7 +857,7 @@ ITT_EXTERN_C void __itt_bind_context_metadata_to_counter(__itt_counter counter, 
         char context_metadata[LOG_BUFFER_MAX_SIZE];
         context_metadata[0] = '\0';
         uint16_t offset = 0;
-        for(size_t i=0; i<length; i++)
+        for(size_t i=0; i<length && offset < LOG_BUFFER_MAX_SIZE - 1; i++)
         {
             char* context_metadata_element = get_context_metadata_element(metadata[i].type, metadata[i].value);
             offset += snprintf(context_metadata + offset, LOG_BUFFER_MAX_SIZE - offset, "%s", context_metadata_element);
